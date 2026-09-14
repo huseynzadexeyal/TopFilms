@@ -1,4 +1,5 @@
-// Filmin adı və ilinə görə YouTube axtarış linki qurur (OMDb trailer linki vermir)
+// detail.js
+
 function getTrailerSearchUrl(title, year) {
   const query = encodeURIComponent(`${title} ${year} official trailer`);
   return `https://www.youtube.com/results?search_query=${query}`;
@@ -9,70 +10,84 @@ const modalBody = document.getElementById("modalBody");
 
 // Modalı açır və filmin ətraflı məlumatını göstərir
 async function openMovieModal(imdbID, options = {}) {
+  if (!modalOverlay || !modalBody) return;
+
   modalOverlay.classList.remove("hidden");
-  modalBody.innerHTML = `<div class="loading" style="padding:40px;">${t("loading")}</div>`;
+  modalBody.innerHTML = `<div class="loading" style="padding:40px; text-align:center; width:100%;">Yüklənir...</div>`;
 
-  const movie = await fetchMovieDetails(imdbID);
+  try {
+    const movie = await fetchMovieDetails(imdbID);
 
-  if (movie.Response === "False") {
-    modalBody.innerHTML = `<div class="empty" style="padding:40px;">${t("noDetails")}</div>`;
-    return;
-  }
+    if (!movie || movie.Response === "False") {
+      modalBody.innerHTML = `<div class="empty" style="padding:40px; text-align:center; width:100%;">Film məlumatı tapılmadı.</div>`;
+      return;
+    }
 
-  const poster = (movie.Poster && movie.Poster !== "N/A") ? movie.Poster : FALLBACK_POSTER;
+    const poster = (movie.Poster && movie.Poster !== "N/A") ? movie.Poster : (typeof FALLBACK_POSTER !== 'undefined' ? FALLBACK_POSTER : '');
 
-  modalBody.innerHTML = `
-    <div class="modal-poster" id="modalPoster">
-      <img src="${poster}" alt="${movie.Title}">
-    </div>
-    <div class="modal-info">
-      <h2>${movie.Title}</h2>
-      <div class="meta">${movie.Year} • ${movie.Rated} • ${movie.Runtime} • ${movie.Genre}</div>
-
-      <div>
-        <span class="rating-badge">⭐ ${movie.imdbRating}</span>
-        <span class="meta">IMDb (${movie.imdbVotes} ${t("imdbVotesSuffix")})</span>
+    modalBody.innerHTML = `
+      <div class="modal-poster" id="modalPoster">
+        <img src="${poster}" alt="${movie.Title}">
       </div>
+      <div class="modal-info">
+        <h2>${movie.Title}</h2>
+        <div class="meta">${movie.Year || ''} • ${movie.Rated || ''} • ${movie.Runtime || ''} • ${movie.Genre || ''}</div>
 
-      <button class="trailer-btn" id="modalTrailerBtn" type="button">
-        ${t("trailerBtn")}
-      </button>
+        <div style="margin: 10px 0;">
+          <span class="rating-badge">⭐ ${movie.imdbRating || 'N/A'}</span>
+          <span class="meta">IMDb (${movie.imdbVotes || '0'} səs)</span>
+        </div>
 
-      <p class="plot">${movie.Plot}</p>
+        <button class="trailer-btn" id="modalTrailerBtn" type="button">
+          ▶ Treyleri İzlə
+        </button>
 
-      <div class="detail-row"><span class="label">${t("labels.director")}</span>${movie.Director}</div>
-      <div class="detail-row"><span class="label">${t("labels.writer")}</span>${movie.Writer}</div>
-      <div class="detail-row"><span class="label">${t("labels.actors")}</span>${movie.Actors}</div>
-      <div class="detail-row"><span class="label">${t("labels.language")}</span>${movie.Language}</div>
-      <div class="detail-row"><span class="label">${t("labels.country")}</span>${movie.Country}</div>
-      <div class="detail-row"><span class="label">${t("labels.awards")}</span>${movie.Awards}</div>
-      <div class="detail-row"><span class="label">${t("labels.released")}</span>${movie.Released}</div>
-    </div>
-  `;
+        <p class="plot">${movie.Plot || 'Məzmun yoxdur.'}</p>
 
-  document.getElementById("modalTrailerBtn").addEventListener("click", () => {
-    playTrailerInline(movie.Title, movie.Year);
-  });
+        <div class="detail-row"><span class="label">Rejissor: </span>${movie.Director || 'N/A'}</div>
+        <div class="detail-row"><span class="label">Ssenari: </span>${movie.Writer || 'N/A'}</div>
+        <div class="detail-row"><span class="label">Rollarda: </span>${movie.Actors || 'N/A'}</div>
+        <div class="detail-row"><span class="label">Dil: </span>${movie.Language || 'N/A'}</div>
+        <div class="detail-row"><span class="label">Ölkə: </span>${movie.Country || 'N/A'}</div>
+        <div class="detail-row"><span class="label">Mükafatlar: </span>${movie.Awards || 'N/A'}</div>
+        <div class="detail-row"><span class="label">Çıxış tarixi: </span>${movie.Released || 'N/A'}</div>
+      </div>
+    `;
 
-  if (options.autoplayTrailer) {
-    playTrailerInline(movie.Title, movie.Year);
+    const trailerBtn = document.getElementById("modalTrailerBtn");
+    if (trailerBtn) {
+      trailerBtn.addEventListener("click", () => {
+        playTrailerInline(movie.Title, movie.Year);
+      });
+    }
+
+    if (options.autoplayTrailer) {
+      playTrailerInline(movie.Title, movie.Year);
+    }
+  } catch (err) {
+    console.error("Modal xətası:", err);
+    modalBody.innerHTML = `<div class="empty" style="padding:40px; text-align:center; width:100%;">Xəta baş verdi.</div>`;
   }
 }
 
-// Treyleri yeni pəncərə açmadan, poster yerinə birbaşa modalın içində oynadır
+// Treyleri pəncərə daxilində oynadır (Əgər API video tapmasa, birbaşa YouTube axtarış pəncərəsinə yönəldir)
 async function playTrailerInline(title, year) {
   const posterBox = document.getElementById("modalPoster");
   if (!posterBox) return;
 
-  posterBox.innerHTML = `<div class="loading" style="padding:20px;">${t("loading")}</div>`;
-  const videoId = await fetchTrailerVideoId(title, year);
+  posterBox.innerHTML = `<div class="loading" style="padding:20px; text-align:center;">Treyler axtarılır...</div>`;
+
+  let videoId = null;
+  if (typeof fetchTrailerVideoId === "function") {
+    videoId = await fetchTrailerVideoId(title, year);
+  }
 
   if (!videoId) {
     posterBox.innerHTML = `
-      <div class="empty" style="padding:20px;">
-        ${t("noTrailer")}
-        <br />
-        <a href="${getTrailerSearchUrl(title, year)}" target="_blank" rel="noopener noreferrer">${t("searchOnYoutube")}</a>
+      <div class="empty" style="padding:20px; text-align:center;">
+        Video pleyer tapılmadı.
+        <br /><br />
+        <a href="${getTrailerSearchUrl(title, year)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="display:inline-block; padding:8px 16px; text-decoration:none;">YouTube-da İzlə ↗</a>
       </div>
     `;
     return;
@@ -83,11 +98,16 @@ async function playTrailerInline(title, year) {
 
 // Modalı bağlamaq üçün hadisələr
 function setupModalClose() {
-  document.getElementById("modalClose").addEventListener("click", closeModal);
+  const closeBtn = document.getElementById("modalClose");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", closeModal);
+  }
 
-  modalOverlay.addEventListener("click", (e) => {
-    if (e.target === modalOverlay) closeModal();
-  });
+  if (modalOverlay) {
+    modalOverlay.addEventListener("click", (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+  }
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeModal();
@@ -95,6 +115,6 @@ function setupModalClose() {
 }
 
 function closeModal() {
-  modalOverlay.classList.add("hidden");
-  modalBody.innerHTML = "";
+  if (modalOverlay) modalOverlay.classList.add("hidden");
+  if (modalBody) modalBody.innerHTML = "";
 }

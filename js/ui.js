@@ -208,3 +208,45 @@ function setupSearch() {
     }
   });
 }
+// ===== Toast Bildiriş Funksiyası =====
+function showToast(message, icon = "ℹ️") {
+  let container = document.getElementById("toastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toastContainer";
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("toast-remove");
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// ===== Sevimlilər (Toast inteqrasiyası ilə) =====
+function toggleFavorite(movie, e) {
+  e.stopPropagation();
+  const index = favorites.findIndex((item) => item.imdbID === movie.imdbID);
+
+  if (index > -1) {
+    favorites.splice(index, 1);
+    showToast(`"${movie.Title}" sevimlilərdən silindi!`, "💔");
+  } else {
+    favorites.push(movie);
+    showToast(`"${movie.Title}" sevimlilərə əlavə olundu!`, "❤️");
+  }
+
+  localStorage.setItem("filmbax_favs", JSON.stringify(favorites));
+  updateFavCount();
+  document
+    .querySelectorAll(`.fav-btn[data-id="${movie.imdbID}"]`)
+    .forEach((btn) => {
+      btn.textContent = index > -1 ? "🤍" : "❤️";
+    });
+}

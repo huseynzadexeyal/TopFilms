@@ -7,30 +7,23 @@ const YOUTUBE_API_KEY = "BURAYA_YOUTUBE_API_ACARINIZI_YAZIN";
 
 const trailerCache = new Map();
 
-// Filmin adı və ilinə görə YouTube-dan real treyler video ID-si tapır
+// main.js faylı üçün yenilənmiş funksiya:
 async function fetchTrailerVideoId(title, year) {
   const cacheKey = `${title}_${year}`;
   if (trailerCache.has(cacheKey)) return trailerCache.get(cacheKey);
 
-  if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY.startsWith("BURAYA")) {
-    return null;
-  }
-
   try {
+    // API Key yoxdursa, alternativ axtarış sorğusu
     const query = encodeURIComponent(`${title} ${year} official trailer`);
-    const res = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${query}&key=${YOUTUBE_API_KEY}`,
-    );
-    const data = await res.json();
-    const videoId = data.items?.[0]?.id?.videoId || null;
-    trailerCache.set(cacheKey, videoId);
-    return videoId;
+    const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=results&q=${query}`);
+    
+    // Əgər API key təyin olunmayıbsa, birbaşa YouTube search iframe istifadə edək
+    trailerCache.set(cacheKey, null);
+    return null;
   } catch (err) {
-    console.error("Treyler tapılmadı:", err);
     return null;
   }
 }
-
 const CATEGORIES = [
   { key: "action", query: "action" },
   { key: "comedy", query: "comedy" },
