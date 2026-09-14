@@ -48,8 +48,7 @@ const CATEGORIES = [
 ];
 
 // ===== API funksiyaları =====
-
-// Axtarış nəticələrini bir neçə səhifədən yığıb tələb olunan sayda qaytarır
+// Axtarış nəticələrini yığır, şəkillərin həqiqətən varlığını yoxlayır və sayı tam tamamlayır
 async function fetchMoviesByQuery(query, count) {
   let results = [];
   let page = 1;
@@ -62,17 +61,41 @@ async function fetchMoviesByQuery(query, count) {
 
     if (data.Response === "False" || !data.Search) break;
 
-    results = results.concat(data.Search);
+    // Hər bir filmin posterini tək-tək yoxlayırıq
+    for (const movie of data.Search) {
+      if (
+        movie.Poster &&
+        movie.Poster !== "N/A" &&
+        movie.Poster.startsWith("http")
+      ) {
+        // Şəklin linkinin həqiqətən işlək (real şəkil) olduğunu yoxlayırıq
+        const isImageValid = await checkImageExists(movie.Poster);
+        if (isImageValid) {
+          results.push(movie);
+        }
+      }
 
-    // OMDb hər səhifədə maksimum 10 nəticə verir
+      // Tələb olunan saya çatdıqsa, dərhal dövrü dayandırırıq
+      if (results.length === count) break;
+    }
+
     if (data.Search.length < 10) break;
     page++;
-    if (page > 5) break; // sonsuz dövrənin qarşısını al
+    if (page > 15) break; // Çox irəli getməmək üçün limit
   }
 
-  return results.slice(0, count);
+  return results;
 }
 
+// Şəkil linkinin həqiqətən açılıb-açılmadığını yoxlayan köməkçi funksiya
+function checkImageExists(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
 // Bir filmin tam məlumatını imdbID ilə gətirir
 async function fetchMovieDetails(imdbID) {
   const res = await fetch(`${API_URL}?apikey=${API_KEY}&i=${imdbID}&plot=full`);

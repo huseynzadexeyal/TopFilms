@@ -1,4 +1,5 @@
-const FALLBACK_POSTER = "https://via.placeholder.com/300x445/1c1c1c/888888?text=Şəkil+yoxdur";
+const FALLBACK_POSTER =
+  "https://via.placeholder.com/300x445/1c1c1c/888888?text=Şəkil+yoxdur";
 
 // ===== Hero bölməsi =====
 async function renderHero() {
@@ -11,7 +12,8 @@ async function renderHero() {
   const movie = await fetchHeroMovie();
   if (!movie || movie.Response === "False") return;
 
-  const poster = (movie.Poster && movie.Poster !== "N/A") ? movie.Poster : FALLBACK_POSTER;
+  const poster =
+    movie.Poster && movie.Poster !== "N/A" ? movie.Poster : FALLBACK_POSTER;
 
   heroBackdrop.style.backgroundImage = `url('${poster}')`;
   heroTitle.textContent = movie.Title;
@@ -39,7 +41,7 @@ async function renderAllCategories(categories) {
     `;
     container.appendChild(section);
 
-    fetchMoviesByQuery(cat.query, MOVIES_PER_CATEGORY).then(movies => {
+    fetchMoviesByQuery(cat.query, MOVIES_PER_CATEGORY).then((movies) => {
       const row = document.getElementById(`row-${cat.query}`);
       row.innerHTML = "";
 
@@ -48,7 +50,7 @@ async function renderAllCategories(categories) {
         return;
       }
 
-      movies.forEach(movie => row.appendChild(createMovieCard(movie)));
+      movies.forEach((movie) => row.appendChild(createMovieCard(movie)));
     });
   }
 }
@@ -58,11 +60,11 @@ function createMovieCard(movie) {
   const card = document.createElement("div");
   card.className = "movie-card";
 
-  const poster = (movie.Poster && movie.Poster !== "N/A") ? movie.Poster : FALLBACK_POSTER;
+  const poster = movie.Poster;
 
   card.innerHTML = `
     <div class="card-media">
-      <img src="${poster}" alt="${movie.Title}" loading="lazy">
+      <img src="${poster}" alt="${movie.Title}" loading="lazy" onerror="this.closest('.movie-card').remove();">
     </div>
     <div class="card-overlay">
       <div class="play-icon">▶</div>
@@ -80,7 +82,6 @@ function createMovieCard(movie) {
   card.addEventListener("mouseenter", () => {
     hoverTimer = setTimeout(async () => {
       const videoId = await fetchTrailerVideoId(movie.Title, movie.Year);
-      // Fetch bitənə qədər siçan kartdan çıxmış ola bilər — yenidən yoxla
       if (!videoId || !card.matches(":hover")) return;
       media.innerHTML = `<iframe class="trailer-frame" src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${videoId}" frameborder="0" allow="autoplay; encrypted-media" title="${movie.Title} trailer"></iframe>`;
       previewActive = true;
@@ -90,14 +91,13 @@ function createMovieCard(movie) {
   card.addEventListener("mouseleave", () => {
     clearTimeout(hoverTimer);
     if (previewActive) {
-      media.innerHTML = `<img src="${poster}" alt="${movie.Title}" loading="lazy">`;
+      media.innerHTML = `<img src="${poster}" alt="${movie.Title}" loading="lazy" onerror="this.closest('.movie-card').remove();">`;
       previewActive = false;
     }
   });
 
   return card;
 }
-
 // ===== Axtarış =====
 function setupSearch() {
   const input = document.getElementById("searchInput");
@@ -107,8 +107,11 @@ function setupSearch() {
 
   async function doSearch() {
     const query = input.value.trim();
+
+    // Əgər axtarış sahəsi boşdursa, nəticələri və bölməni sıfırla/gizlət
     if (!query) {
       resultsBlock.classList.add("hidden");
+      row.innerHTML = "";
       return;
     }
 
@@ -123,11 +126,20 @@ function setupSearch() {
       return;
     }
 
-    movies.forEach(movie => row.appendChild(createMovieCard(movie)));
+    movies.forEach((movie) => row.appendChild(createMovieCard(movie)));
   }
 
   btn.addEventListener("click", doSearch);
-  input.addEventListener("keydown", e => {
+
+  input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") doSearch();
+  });
+
+  // 💡 Mətni siləndə (yazını təmizlədikdə) avtomatik sıfırlanması üçün:
+  input.addEventListener("input", () => {
+    if (!input.value.trim()) {
+      resultsBlock.classList.add("hidden");
+      row.innerHTML = "";
+    }
   });
 }
