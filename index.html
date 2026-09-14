@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="az" data-theme="neon">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      (function () {
+        var savedTheme = localStorage.getItem("filmbax_theme") || "neon";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TopFilms — Film Axtarış Saytı</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="navbar">
+      <div class="logo">TOP<span>Films</span></div>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Film axtar..." />
+        <button id="searchBtn">Axtar</button>
+      </div>
+      <div class="lang-switch" id="langSwitch">
+        <button class="lang-btn active" data-lang="az">AZ</button>
+        <button class="lang-btn" data-lang="ru">RU</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
+      <div class="theme-switch" id="themeSwitch">
+        <button class="theme-btn active" data-theme="neon">Neon</button>
+        <button class="theme-btn" data-theme="venom">Venom</button>
+      </div>
+    </header>
+
+    <section id="hero" class="hero">
+      <div class="hero-backdrop" id="heroBackdrop"></div>
+      <div class="hero-shade"></div>
+      <div class="hero-content">
+        <div class="hero-tag" id="heroTag">Bu gecə üçün seçim</div>
+        <h1 class="hero-title" id="heroTitle">Yüklənir...</h1>
+        <p class="hero-plot" id="heroPlot"></p>
+        <div class="hero-actions">
+          <a id="heroTrailerBtn" class="btn btn-primary" href="#">▶ Treyler</a>
+          <button id="heroDetailBtn" class="btn btn-ghost">Ətraflı</button>
+        </div>
+      </div>
+    </section>
+
+    <main id="content">
+      <div id="searchResults" class="category hidden">
+        <h2>Axtarış Nəticələri</h2>
+        <div class="movie-row" id="searchRow"></div>
+      </div>
+
+      <div id="categories"></div>
+    </main>
+
+    <!-- Modal -->
+    <div id="modalOverlay" class="modal-overlay hidden">
+      <div class="modal">
+        <button id="modalClose" class="modal-close">&times;</button>
+        <div id="modalBody" class="modal-body"></div>
+      </div>
+    </div>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/detail.js"></script>
+  </body>
+</html>
