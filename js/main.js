@@ -3,14 +3,11 @@ const API_KEY = "5b3e48fc";
 const API_URL = "https://www.omdbapi.com/";
 const MOVIES_PER_CATEGORY = 14;
 
-// Real treyler videosunu tapıb kartın içində göstərmək üçün YouTube Data API v3 açarı lazımdır.
-// Pulsuz açarı buradan alın: https://console.cloud.google.com/apis/library/youtube.googleapis.com
-// (Google Cloud-da layihə yaradın → "YouTube Data API v3"-ü aktivləşdirin → Credentials → API Key)
 const YOUTUBE_API_KEY = "BURAYA_YOUTUBE_API_ACARINIZI_YAZIN";
 
 const trailerCache = new Map();
 
-// Filmin adı və ilinə görə YouTube-dan real treyler video ID-si tapır (nəticələr keşlənir)
+// Filmin adı və ilinə görə YouTube-dan real treyler video ID-si tapır
 async function fetchTrailerVideoId(title, year) {
   const cacheKey = `${title}_${year}`;
   if (trailerCache.has(cacheKey)) return trailerCache.get(cacheKey);
@@ -34,8 +31,6 @@ async function fetchTrailerVideoId(title, year) {
   }
 }
 
-// OMDb-də hazır "kateqoriya" endpoint-i yoxdur, ona görə hər kateqoriya üçün
-// açar sözlə axtarış edib nəticələri yığırıq.
 const CATEGORIES = [
   { key: "action", query: "action" },
   { key: "comedy", query: "comedy" },
@@ -47,8 +42,17 @@ const CATEGORIES = [
   { key: "adventure", query: "adventure" },
 ];
 
-// ===== API funksiyaları =====
-// Axtarış nəticələrini yığır, şəkillərin həqiqətən varlığını yoxlayır və sayı tam tamamlayır
+// Şəkil linkinin həqiqətən açılıb-açılmadığını yoxlayan köməkçi funksiya
+function checkImageExists(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
+
+// Axtarış nəticələrini yığır, şəkillərin işlək olduğunu yoxlayır və yerlərin boş qalmaması üçün tam doldurur
 async function fetchMoviesByQuery(query, count) {
   let results = [];
   let page = 1;
@@ -61,57 +65,44 @@ async function fetchMoviesByQuery(query, count) {
 
     if (data.Response === "False" || !data.Search) break;
 
-    // Hər bir filmin posterini tək-tək yoxlayırıq
     for (const movie of data.Search) {
       if (
         movie.Poster &&
         movie.Poster !== "N/A" &&
         movie.Poster.startsWith("http")
       ) {
-        // Şəklin linkinin həqiqətən işlək (real şəkil) olduğunu yoxlayırıq
         const isImageValid = await checkImageExists(movie.Poster);
         if (isImageValid) {
           results.push(movie);
         }
       }
 
-      // Tələb olunan saya çatdıqsa, dərhal dövrü dayandırırıq
       if (results.length === count) break;
     }
 
     if (data.Search.length < 10) break;
     page++;
-    if (page > 15) break; // Çox irəli getməmək üçün limit
+    if (page > 15) break;
   }
 
   return results;
 }
 
-// Şəkil linkinin həqiqətən açılıb-açılmadığını yoxlayan köməkçi funksiya
-function checkImageExists(url) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    img.src = url;
-  });
-}
 // Bir filmin tam məlumatını imdbID ilə gətirir
 async function fetchMovieDetails(imdbID) {
   const res = await fetch(`${API_URL}?apikey=${API_KEY}&i=${imdbID}&plot=full`);
   return res.json();
 }
 
-// Hero bölməsi üçün seçilmiş klassik/məşhur filmlər (hər dəfə təsadüfi biri seçilir)
 const SPOTLIGHT_IDS = [
-  "tt1375666", // Inception
-  "tt0468569", // The Dark Knight
-  "tt0111161", // The Shawshank Redemption
-  "tt0137523", // Fight Club
-  "tt0109830", // Forrest Gump
-  "tt0110912", // Pulp Fiction
-  "tt0816692", // Interstellar
-  "tt0080684", // Star Wars: Empire Strikes Back
+  "tt1375666",
+  "tt0468569",
+  "tt0111161",
+  "tt0137523",
+  "tt0109830",
+  "tt0110912",
+  "tt0816692",
+  "tt0080684",
 ];
 
 async function fetchHeroMovie() {
@@ -119,17 +110,7 @@ async function fetchHeroMovie() {
   return fetchMovieDetails(id);
 }
 
-// ===== İnisializasiya =====
-document.addEventListener("DOMContentLoaded", () => {
-  setupLanguageSwitch();
-  setupThemeSwitch();
-  renderHero();
-  renderAllCategories(CATEGORIES);
-  setupSearch();
-  setupModalClose();
-  updateClock();
-});
-// ===== Elektron Saat Funksiyası =====
+// Elektron Saat Funksiyası
 function updateClock() {
   const clockElement = document.getElementById("clockTime");
   if (!clockElement) return;
@@ -141,6 +122,17 @@ function updateClock() {
 
   clockElement.textContent = `${hours}:${minutes}:${seconds}`;
 }
-
-// Hər 1 saniyədən bir saatı yeniləyirik
 setInterval(updateClock, 1000);
+
+// ===== İnisializasiya =====
+document.addEventListener("DOMContentLoaded", () => {
+  setupLanguageSwitch();
+  setupThemeSwitch();
+  renderHero();
+  renderAllCategories(CATEGORIES);
+  setupSearch();
+  setupModalClose();
+  updateClock();
+  updateFavCount();
+  setupFavoritesModal();
+});

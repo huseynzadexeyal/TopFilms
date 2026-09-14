@@ -21,24 +21,29 @@
   <body>
     <header class="navbar">
       <div class="logo">TOP<span>Films</span></div>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Film axtar..." />
+        <button id="searchBtn">Axtar</button>
+      </div>
       <div class="lang-switch" id="langSwitch">
         <button class="lang-btn active" data-lang="az">AZ</button>
         <button class="lang-btn" data-lang="ru">RU</button>
         <button class="lang-btn" data-lang="en">EN</button>
       </div>
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Film axtar..." />
-        <button id="searchBtn">Axtar</button>
-      </div>
-
       <div class="theme-switch" id="themeSwitch">
         <button class="theme-btn active" data-theme="neon">Neon</button>
         <button class="theme-btn" data-theme="venom">Venom</button>
       </div>
-      <!-- 🕒 ELAVƏ EDİLƏN ELEKTRON SAAT BÖLMƏSİ -->
+
+      <!-- Elektron Saat -->
       <div class="digital-clock" id="digitalClock">
         <span id="clockTime">00:00:00</span>
       </div>
+
+      <!-- Sevimlilər Düyməsi -->
+      <button id="favoritesBtn" class="fav-header-btn">
+        ❤️ Sevimlilər (<span id="favCount">0</span>)
+      </button>
     </header>
 
     <section id="hero" class="hero">
